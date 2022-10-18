@@ -55,6 +55,12 @@ class UprightRotatingView @JvmOverloads constructor(
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         logger.info("onLayout")
+        require(childCount == 1) { "There can be exactly one child view，there are currently $childCount" }
+        childView = children.first().apply {
+            pivotX = width / 2f
+            pivotY = height / 2f
+        }
+        require((childView.layoutParams as LayoutParams).gravity == Gravity.CENTER) { "子View的layout_gravity必须是center" }
         if (firstOnLayout) {
             init()
             firstOnLayout = false
@@ -62,16 +68,10 @@ class UprightRotatingView @JvmOverloads constructor(
     }
 
     private fun init() {
-        require(childCount == 1) { "There can be exactly one child view，there are currently $childCount" }
-        childView = children.first().apply {
-            pivotX = width / 2f
-            pivotY = height / 2f
-        }
         lastHeight = childView.height
         lastWidth = childView.width
         lastRotation =
             childView.pivotRotation(0) ?: throw IllegalStateException("子View的rotation必须是90的倍数")
-        require((childView.layoutParams as LayoutParams).gravity == Gravity.CENTER) { "子View的layout_gravity必须是center" }
     }
 
     fun childRotationBy(@UprightDegrees degrees: Int) {
@@ -104,12 +104,9 @@ class UprightRotatingView @JvmOverloads constructor(
         childView.animate().apply {
             val byDegrees = (rotation.degrees - childView.rotation).degreesShrink()
             logger.info("childRotationTo byDegrees=$byDegrees")
-            duration =
-                (durationPerDegrees * abs(byDegrees)).roundToLong()
-            if (lastHeight == 0) if (rotation.minus(lastRotation).is90) withStartAction {
-                setTargetWidthHeight(
-                    lastHeight, lastWidth, duration
-                )
+            duration = (durationPerDegrees * abs(byDegrees)).roundToLong()
+            if (rotation.minus(lastRotation).is90) withStartAction {
+                setTargetWidthHeight(lastHeight, lastWidth, duration)
             }
             withEndAction {
                 lastHeight = childView.height

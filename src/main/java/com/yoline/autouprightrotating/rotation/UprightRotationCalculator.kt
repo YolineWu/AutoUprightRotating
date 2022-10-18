@@ -8,13 +8,12 @@ import android.content.IntentFilter
 import android.util.Log
 import android.view.OrientationEventListener
 import android.view.View
-import kotlin.math.roundToInt
 
-open class UprightRotationCalculator(
+open class UprightRotationCalculator<view: View>(
     val context: Context,
-    val rotateView: View,
+    val rotateView: view,
     val maxOffsetDegrees: Float = DEFAULT_MAX_OFFSET,
-    var onViewRotate: ((rotateView: View, uprightRotation: UprightRotation) -> Unit)? = DEFAULT_ON_VIEW_ROTATE
+    var onViewRotate: ((rotateView: view, uprightRotation: UprightRotation) -> Unit)? = DEFAULT_ON_VIEW_ROTATE
 ) {
     open var displayRotation: UprightRotation = UprightRotation.ROTATION_0
         set(value) {
@@ -87,20 +86,18 @@ open class UprightRotationCalculator(
     companion object {
         const val DEFAULT_MAX_OFFSET = 15f
 
-        fun View.autoRotate(
+        fun <view: View> view.autoRotate(
             context: Context,
             maxOffsetDegrees: Float = DEFAULT_MAX_OFFSET,
-            onViewRotate: ((rotateView: View, uprightRotation: UprightRotation) -> Unit)? = DEFAULT_ON_VIEW_ROTATE
-        ): UprightRotationCalculator {
+            onViewRotate: ((rotatingView: view, rotation: UprightRotation) -> Unit)? = DEFAULT_ON_VIEW_ROTATE
+        ): UprightRotationCalculator<view> {
             return UprightRotationCalculator(
                 context, this, maxOffsetDegrees, onViewRotate
             ).apply { start() }
         }
 
-        val DEFAULT_ON_VIEW_ROTATE: ((rotateView: View, uprightRotation: UprightRotation) -> Unit) =
-            { view, rotation ->
-                Log.i("yoline", "rotation onRotate rotation=$rotation")
-                view.animate().rotation(rotation.degrees.toFloat())
-            }
+        val  DEFAULT_ON_VIEW_ROTATE = fun(rotatingView: View, rotation: UprightRotation) {
+            rotatingView.animate().rotation(rotation.degrees.toFloat())
+        }
     }
 }
