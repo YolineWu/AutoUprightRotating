@@ -34,7 +34,7 @@ object DegreesUtils {
     ): Double {
         return (number.toDouble() % 360).let {
             val includeValue = (if (includeStart) startDegrees else endDegrees).toDouble()
-            if ((it > startDegrees && it < endDegrees) || it == includeValue) number.toDouble()
+            if ((it > startDegrees && it < endDegrees) || it == includeValue) it
             else (if (it > 0) it - 360 else it + 360).toDouble()
         }
     }

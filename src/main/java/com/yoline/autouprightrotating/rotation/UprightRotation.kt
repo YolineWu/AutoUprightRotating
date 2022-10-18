@@ -3,6 +3,7 @@ package com.yoline.autouprightrotating.rotation
 import android.view.Surface
 import android.view.View
 import com.yoline.autouprightrotating.utils.DegreesUtils.degreesShrink
+import kotlin.math.roundToInt
 
 /**
  * 表示悬浮窗的内容相对于其轴心旋转的度数或方向
@@ -67,13 +68,32 @@ enum class UprightRotation(@UprightDegrees val degrees: Int, @SurfaceRotation va
 
         fun byAnyDegrees(degrees: Int, maxOffset: Float): UprightRotation? {
             return degrees.degreesShrink().let {
-                if (it <= -180 + maxOffset || it >= 180 - maxOffset) ROTATION_180
+                if (it >= 0 - maxOffset && it <= 0 + maxOffset) ROTATION_0
                 else if (it >= 90 - maxOffset && it <= 90 + maxOffset) ROTATION_CW_90
-                else if (it >= 0 - maxOffset && it <= 0 + maxOffset) ROTATION_0
                 else if (it >= -90 - maxOffset && it <= -90 + maxOffset) ROTATION_CCW_90
+                else if (it <= -180 + maxOffset || it >= 180 - maxOffset) ROTATION_180
                 else null
             }
         }
 
+        fun View.displayRotation(): UprightRotation? {
+            return this.display?.rotation?.let { bySurfaceRotation(it) }
+        }
+
+        fun View.pivotRotation(maxOffsetDegrees: Int): UprightRotation? {
+            return pivotRotation(maxOffsetDegrees.toFloat())
+        }
+
+        fun View.pivotRotationNotNull(maxOffsetDegrees: Int): UprightRotation {
+            return pivotRotation(maxOffsetDegrees.toFloat())!!
+        }
+
+        fun View.pivotRotation(maxOffsetDegrees: Float = 45f): UprightRotation? {
+            return byAnyDegrees(this.rotation.roundToInt(), maxOffsetDegrees)
+        }
+
+        fun View.pivotRotationNotNull(maxOffsetDegrees: Float = 45f): UprightRotation {
+            return pivotRotation(maxOffsetDegrees)!!
+        }
     }
 }

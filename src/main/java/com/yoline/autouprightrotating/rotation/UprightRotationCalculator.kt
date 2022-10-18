@@ -85,6 +85,8 @@ open class UprightRotationCalculator(
     }
 
     companion object {
+        const val DEFAULT_MAX_OFFSET = 15f
+
         fun View.autoRotate(
             context: Context,
             maxOffsetDegrees: Float = DEFAULT_MAX_OFFSET,
@@ -94,16 +96,6 @@ open class UprightRotationCalculator(
                 context, this, maxOffsetDegrees, onViewRotate
             ).apply { start() }
         }
-
-        fun View.displayRotation(): UprightRotation? {
-            return this.display?.rotation?.let { UprightRotation.bySurfaceRotation(it) }
-        }
-
-        fun View.pivotRotation(maxOffsetDegrees: Float = DEFAULT_MAX_OFFSET): UprightRotation? {
-            return UprightRotation.byAnyDegrees(this.rotation.roundToInt(), maxOffsetDegrees)
-        }
-
-        val DEFAULT_MAX_OFFSET = 15f
 
         val DEFAULT_ON_VIEW_ROTATE: ((rotateView: View, uprightRotation: UprightRotation) -> Unit) =
             { view, rotation ->
