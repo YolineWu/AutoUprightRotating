@@ -9,7 +9,7 @@ import android.util.Log
 import android.view.OrientationEventListener
 import android.view.View
 
-open class UprightRotationCalculator<view: View>(
+open class UprightRotationCalculator<view : View>(
     val context: Context,
     val rotateView: view,
     val maxOffsetDegrees: Float = DEFAULT_MAX_OFFSET,
@@ -43,7 +43,10 @@ open class UprightRotationCalculator<view: View>(
     }
 
     open fun stop() {
-        context.unregisterReceiver(mConfigChangeReceiver)
+        try {
+            context.unregisterReceiver(mConfigChangeReceiver)
+        } catch (_: IllegalArgumentException) {
+        }
         orientationEvent.disable()
     }
 
@@ -70,7 +73,9 @@ open class UprightRotationCalculator<view: View>(
     private val mConfigChangeReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         @SuppressLint("WrongConstant")
         override fun onReceive(context: Context, intent: Intent) {
-            rotateView.display?.rotation?.let { displayRotation = UprightRotation.bySurfaceRotation(it) }
+            rotateView.display?.rotation?.let {
+                displayRotation = UprightRotation.bySurfaceRotation(it)
+            }
         }
     }
 
@@ -86,7 +91,7 @@ open class UprightRotationCalculator<view: View>(
     companion object {
         const val DEFAULT_MAX_OFFSET = 15f
 
-        fun <view: View> view.autoRotate(
+        fun <view : View> view.autoRotate(
             context: Context,
             maxOffsetDegrees: Float = DEFAULT_MAX_OFFSET,
             onViewRotate: ((rotatingView: view, rotation: UprightRotation) -> Unit)? = DEFAULT_ON_VIEW_ROTATE
@@ -96,7 +101,7 @@ open class UprightRotationCalculator<view: View>(
             ).apply { start() }
         }
 
-        val  DEFAULT_ON_VIEW_ROTATE = fun(rotatingView: View, rotation: UprightRotation) {
+        val DEFAULT_ON_VIEW_ROTATE = fun(rotatingView: View, rotation: UprightRotation) {
             rotatingView.animate().rotation(rotation.degrees.toFloat())
         }
     }

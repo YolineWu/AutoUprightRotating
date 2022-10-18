@@ -3,6 +3,7 @@ package com.yoline.autouprightrotating
 import android.animation.AnimatorSet
 import android.animation.ValueAnimator
 import android.content.Context
+import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
@@ -28,8 +29,7 @@ class UprightRotatingView @JvmOverloads constructor(
 
     private val logger: Logger = Logger.getLogger("yoline")
 
-    lateinit var childView: View
-        private set
+    private var childView: View? = null
     var rotatingDuration: Long = DEFAULT_ROTATING_DURATION
     var durationPerDegrees: Long
         get() = (rotatingDuration / 90f).roundToLong()
@@ -59,8 +59,8 @@ class UprightRotatingView @JvmOverloads constructor(
         childView = children.first().apply {
             pivotX = width / 2f
             pivotY = height / 2f
+            require((layoutParams as LayoutParams).gravity == Gravity.CENTER) { "子View的layout_gravity必须是center" }
         }
-        require((childView.layoutParams as LayoutParams).gravity == Gravity.CENTER) { "子View的layout_gravity必须是center" }
         if (firstOnLayout) {
             init()
             firstOnLayout = false
@@ -68,10 +68,12 @@ class UprightRotatingView @JvmOverloads constructor(
     }
 
     private fun init() {
-        lastHeight = childView.height
-        lastWidth = childView.width
-        lastRotation =
-            childView.pivotRotation(0) ?: throw IllegalStateException("子View的rotation必须是90的倍数")
+        childView?.let {
+            lastHeight = it.height
+            lastWidth = it.width
+            lastRotation =
+                it.pivotRotation(0) ?: throw IllegalStateException("子View的rotation必须是90的倍数")
+        } ?: throwNotLayout()
     }
 
     fun childRotationBy(@UprightDegrees degrees: Int) {
@@ -81,9 +83,11 @@ class UprightRotatingView @JvmOverloads constructor(
     }
 
     fun childRotationBy(rotation: UprightRotation) {
-        val fromRotation = rotationRotatingTo ?: childView.pivotRotation(0)
-        require(fromRotation != null) { "调用此方法时子View的rotation必须是90的倍数" }
-        childRotationTo(fromRotation.plus(rotation))
+        childView?.let {
+            val fromRotation = rotationRotatingTo ?: it.pivotRotation(0)
+            require(fromRotation != null) { "调用此方法时子View的rotation必须是90的倍数" }
+            childRotationTo(fromRotation.plus(rotation))
+        } ?: throwNotLayout()
     }
 
     fun childRotationTo(@UprightDegrees degrees: Int) {
@@ -93,61 +97,69 @@ class UprightRotatingView @JvmOverloads constructor(
     }
 
     fun childRotationTo(rotation: UprightRotation) {
-        childView.animate().cancel()
-        if (rotatingDuration == 0L) {
-            if (rotation.minus(lastRotation).is90) setTargetWidthHeight(
-                childView.height, childView.width, 0
-            )
-            childView.rotation = rotation.degrees.toFloat()
-            return
-        }
-        childView.animate().apply {
-            val byDegrees = (rotation.degrees - childView.rotation).degreesShrink()
-            logger.info("childRotationTo byDegrees=$byDegrees")
-            duration = (durationPerDegrees * abs(byDegrees)).roundToLong()
-            if (rotation.minus(lastRotation).is90) withStartAction {
-                setTargetWidthHeight(lastHeight, lastWidth, duration)
+        childView?.let { childView ->
+            childView.animate().cancel()
+            if (rotatingDuration == 0L) {
+                if (rotation.minus(lastRotation).is90) setTargetWidthHeight(
+                    childView.height, childView.width, 0
+                )
+                childView.rotation = rotation.degrees.toFloat()
+                return
             }
-            withEndAction {
-                lastHeight = childView.height
-                lastWidth = childView.width
-                lastRotation = childView.pivotRotationNotNull(0)
-                rotationRotatingTo = null
-                logger.info("animate end childView.rotation=${childView.rotation}")
+            childView.animate().apply {
+                val byDegrees = (rotation.degrees - childView.rotation).degreesShrink()
+                logger.info("childRotationTo byDegrees=$byDegrees")
+                duration = (durationPerDegrees * abs(byDegrees)).roundToLong()
+                if (rotation.minus(lastRotation).is90) withStartAction {
+                    setTargetWidthHeight(lastHeight, lastWidth, duration)
+                }
+                withEndAction {
+                    lastHeight = childView.height
+                    lastWidth = childView.width
+                    lastRotation = childView.pivotRotationNotNull(0)
+                    rotationRotatingTo = null
+                    logger.info("animate end childView.rotation=${childView.rotation}")
+                }
+                rotationRotatingTo = rotation
+                rotationBy(byDegrees)
             }
-            rotationRotatingTo = rotation
-            rotationBy(byDegrees)
-        }
+        } ?: throwNotLayout()
     }
 
     private fun setTargetWidthHeight(toWidth: Int, toHeight: Int, rotatingDuration: Long) {
-        if (rotatingDuration == 0L) {
-            childView.layoutParams = childView.layoutParams.apply {
-                height = toWidth
-                width = toHeight
-            }
-            return
-        }
-        val heightAnim = ValueAnimator.ofInt(childView.height, toHeight).apply {
-            addUpdateListener {
+        childView?.let { childView ->
+            if (rotatingDuration == 0L) {
                 childView.layoutParams = childView.layoutParams.apply {
-                    height = it.animatedValue as Int
+                    height = toWidth
+                    width = toHeight
+                }
+                return
+            }
+            val heightAnim = ValueAnimator.ofInt(childView.height, toHeight).apply {
+                addUpdateListener {
+                    childView.layoutParams = childView.layoutParams.apply {
+                        height = it.animatedValue as Int
+                    }
                 }
             }
-        }
-        val widthAnim = ValueAnimator.ofInt(childView.width, toWidth).apply {
-            addUpdateListener {
-                childView.layoutParams = childView.layoutParams.apply {
-                    width = it.animatedValue as Int
+            val widthAnim = ValueAnimator.ofInt(childView.width, toWidth).apply {
+                addUpdateListener {
+                    childView.layoutParams = childView.layoutParams.apply {
+                        width = it.animatedValue as Int
+                    }
                 }
-            }
 
-        }
-        AnimatorSet().apply {
-            play(heightAnim).with(widthAnim)
-            duration = rotatingDuration
-            start()
-        }
+            }
+            AnimatorSet().apply {
+                play(heightAnim).with(widthAnim)
+                duration = rotatingDuration
+                start()
+            }
+        } ?: throwNotLayout()
+    }
+
+    private fun throwNotLayout() {
+        throw IllegalStateException("UprightRotatingView is not layout, call after onLayout")
     }
 
     companion object {
