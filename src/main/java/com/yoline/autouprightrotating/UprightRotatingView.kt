@@ -14,6 +14,7 @@ import androidx.core.view.children
 import com.yoline.autouprightrotating.rotation.UprightDegrees
 import com.yoline.autouprightrotating.rotation.UprightRotation
 import com.yoline.autouprightrotating.rotation.UprightRotationCalculator.Companion.pivotRotation
+import java.util.logging.Logger
 
 open class UprightRotatingView @JvmOverloads constructor(
     context: Context,
@@ -22,13 +23,25 @@ open class UprightRotatingView @JvmOverloads constructor(
     @StyleRes defStyleRes: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr, defStyleRes) {
 
+    private val logger: Logger = Logger.getLogger("yoline")
+
     lateinit var targetView: View
         private set
-    var animDuration: Long = 3000
+    var rotatingDuration: Long = DEFAULT_ROTATING_DURATION
+
+    init {
+        context.theme.obtainStyledAttributes(
+            attrs, R.styleable.UprightRotatingView, defStyleAttr, defStyleRes
+        ).apply {
+            rotatingDuration = getInt(
+                R.styleable.UprightRotatingView_rotatingDuration, DEFAULT_ROTATING_DURATION.toInt()
+            ).toLong()
+        }
+    }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        Log.i("yoline", "onLayout")
+        logger.info("onLayout")
         require(childCount == 1) { "There can be exactly one child view，there are currently $childCount" }
         targetView = children.first().apply {
             pivotX = width / 2f
@@ -44,9 +57,16 @@ open class UprightRotatingView @JvmOverloads constructor(
     }
 
     open fun childRotationBy(rotation: UprightRotation) {
+        if (rotatingDuration == 0L) {
+            targetView.pivotRotation()?.let {
+                targetView.rotation = it.plus(rotation).degrees.toFloat()
+            }
+            swapTargetWidthHeight()
+            return
+        }
         targetView.animate().apply {
-            duration = animDuration
-            if (rotation.is90) withStartAction { playTargetSizeAnim() }
+            duration = rotatingDuration
+            if (rotation.is90) withStartAction { swapTargetWidthHeight() }
         }.rotationBy(rotation.degrees.toFloat())
     }
 
@@ -62,7 +82,14 @@ open class UprightRotatingView @JvmOverloads constructor(
         } ?: throw IllegalArgumentException("调用此方法时，targetView的rotation必须是90的倍数")
     }
 
-    private fun playTargetSizeAnim() {
+    private fun swapTargetWidthHeight() {
+        if (rotatingDuration == 0L) {
+            targetView.layoutParams = targetView.layoutParams.apply {
+                height = targetView.width
+                width = targetView.height
+            }
+            return
+        }
         val heightAnim = ValueAnimator.ofInt(targetView.height, targetView.width).apply {
             addUpdateListener {
                 targetView.layoutParams = targetView.layoutParams.apply {
@@ -80,8 +107,12 @@ open class UprightRotatingView @JvmOverloads constructor(
         }
         AnimatorSet().apply {
             play(heightAnim).with(widthAnim)
-            duration = animDuration
+            duration = rotatingDuration
             start()
         }
+    }
+
+    companion object {
+        const val DEFAULT_ROTATING_DURATION = 300L
     }
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="UprightRotatingView">
+        <attr name="rotatingDuration" format="integer" />
+    </declare-styleable>
+
+</resources>
