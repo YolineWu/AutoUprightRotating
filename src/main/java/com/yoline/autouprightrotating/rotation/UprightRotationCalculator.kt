@@ -13,7 +13,7 @@ open class UprightRotationCalculator<view : View>(
     val context: Context,
     val rotateView: view,
     val maxOffsetDegrees: Float = DEFAULT_MAX_OFFSET,
-    var onViewRotate: ((rotateView: view, uprightRotation: UprightRotation) -> Unit)? = DEFAULT_ON_VIEW_ROTATE
+    var onViewRotate: ((rotateView: view, rotation: UprightRotation) -> Unit)? = DEFAULT_ON_VIEW_ROTATE
 ) {
     open var displayRotation: UprightRotation = UprightRotation.ROTATION_0
         set(value) {
