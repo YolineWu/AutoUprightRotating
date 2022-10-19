@@ -80,10 +80,6 @@ enum class UprightRotation(@UprightDegrees val degrees: Int, @SurfaceRotation va
             return this.display?.rotation?.let { bySurfaceRotation(it) }
         }
 
-        fun View.pivotRotation(maxOffsetDegrees: Int): UprightRotation? {
-            return pivotRotation(maxOffsetDegrees.toFloat())
-        }
-
         fun View.pivotRotationNotNull(maxOffsetDegrees: Int): UprightRotation {
             return pivotRotation(maxOffsetDegrees.toFloat())!!
         }
