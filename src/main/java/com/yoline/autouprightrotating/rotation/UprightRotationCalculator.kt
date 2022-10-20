@@ -15,6 +15,9 @@ open class UprightRotationCalculator<view : View>(
     val maxOffsetDegrees: Float = DEFAULT_MAX_OFFSET,
     var onViewRotate: ((rotateView: view, rotation: UprightRotation) -> Unit)? = DEFAULT_ON_VIEW_ROTATE
 ) {
+    var isEnable: Boolean = false
+        private set
+
     open var displayRotation: UprightRotation = UprightRotation.ROTATION_0
         set(value) {
             Log.i("yoline", "rotation displayRotation=$value")
@@ -40,6 +43,7 @@ open class UprightRotationCalculator<view : View>(
         }
         this.registerConfigChangeReceiver()
         orientationEvent.enable()
+        isEnable = true
     }
 
     open fun stop() {
@@ -48,6 +52,7 @@ open class UprightRotationCalculator<view : View>(
         } catch (_: IllegalArgumentException) {
         }
         orientationEvent.disable()
+        isEnable = false
     }
 
     protected open fun onRotationUpdate() {
